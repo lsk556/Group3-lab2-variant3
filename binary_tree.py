@@ -174,11 +174,11 @@ def _find(
 ) -> Optional[T]:
     if node is None:
         return None
-    if predicate(node.value):
-        return node.value
     left = _find(node.left, predicate)
     if left is not None:
         return left
+    if predicate(node.value):
+        return node.value
     return _find(node.right, predicate)
 
 
