@@ -56,8 +56,12 @@ class BinaryTreeSet(Generic[T]):
         return to_list(self) == to_list(other)
 
     def __str__(self) -> str:
-        items = ",".join(str(v) for v in to_list(self))
-        return "{" + items + "}"
+        lst = to_list(self)
+        if not lst:
+            return "{}"
+        if len(lst) == 1:
+            return "{" + str(lst[0]) + "}"
+        return "{" + ", ".join(str(v) for v in lst) + "}"
 
 
 def _iterate(node: Optional[_Node[T]]) -> Iterator[T]:
