@@ -1,4 +1,4 @@
-# [GROUP-NAME] - lab 2 - variant 3
+# BST immutable collection - lab 2 - variant 3
 
 This is an immutable collection implementation based on binary search tree (BST).  
 
