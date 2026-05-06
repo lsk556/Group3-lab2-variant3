@@ -53,15 +53,14 @@ class BinaryTreeSet(Generic[T]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, BinaryTreeSet):
             return False
-        return to_list(self) == to_list(other)
+        other_tree = cast(BinaryTreeSet[T], other)
+        return _eq_iter(
+            _iterate(self._root), _iterate(other_tree._root)
+        )
 
     def __str__(self) -> str:
-        lst = to_list(self)
-        if not lst:
-            return "{}"
-        if len(lst) == 1:
-            return "{" + str(lst[0]) + "}"
-        return "{" + ", ".join(str(v) for v in lst) + "}"
+        items = ",".join(str(v) for v in to_list(self))
+        return "{" + items + "}"
 
 
 def _iterate(node: Optional[_Node[T]]) -> Iterator[T]:
@@ -70,6 +69,24 @@ def _iterate(node: Optional[_Node[T]]) -> Iterator[T]:
     yield from _iterate(node.left)
     yield node.value
     yield from _iterate(node.right)
+
+
+def _eq_iter(it1: Iterator[T], it2: Iterator[T]) -> bool:
+    try:
+        a = next(it1)
+    except StopIteration:
+        try:
+            next(it2)
+            return False
+        except StopIteration:
+            return True
+    try:
+        b = next(it2)
+    except StopIteration:
+        return False
+    if a != b:
+        return False
+    return _eq_iter(it1, it2)
 
 
 def _insert(node: Optional[_Node[T]], value: T) -> _Node[T]:

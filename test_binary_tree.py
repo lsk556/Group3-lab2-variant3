@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 import itertools
 import pytest
 from hypothesis import given
-from hypothesis.strategies import SearchStrategy
+from hypothesis.strategies import composite, SearchStrategy
 import hypothesis.strategies as st
 from binary_tree import (
     BinaryTreeSet,
@@ -25,40 +25,46 @@ from binary_tree import (
 )
 
 
-# ---------- Strategy for generating BinaryTreeSet with arbitrary comparab
-def btree() -> SearchStrategy[BinaryTreeSet[Any]]:
-    return st.builds(from_list, st.lists(st.one_of(st.none(), st.integers())))
+@composite
+def btree(
+    draw: Any,
+    elements: SearchStrategy[Optional[int]] = st.one_of(
+        st.none(), st.integers()
+    ),
+) -> BinaryTreeSet[Optional[int]]:
+    lst: list[Optional[int]] = draw(st.lists(elements))
+    return from_list(lst)
 
 
 # ---------- Variant 3 API test (from lab description) ----------
 def test_api() -> None:
-    empty: BinaryTreeSet[Any] = BinaryTreeSet()
-    assert str(cons(None, empty)) == "{None}"
-    l1 = cons(None, cons(1, empty))
-    l2 = cons(1, cons(None, empty))
-    assert str(empty) == "{}"
-    assert str(l1) == "{None, 1}" or str(l1) == "{1, None}"
-    assert empty != l1
-    assert empty != l2
+    e: BinaryTreeSet[Optional[int]] = empty()
+    assert str(cons(None, e)) == "{None}"
+    l1 = cons(None, cons(1, e))
+    l2 = cons(1, cons(None, e))
+    assert str(e) == "{}"
+    assert str(l1) == "{None,1}" or str(l1) == "{1,None}"
+    assert e != l1
+    assert e != l2
     assert l1 == l2
     assert l1 == cons(None, cons(1, l1))
 
-    assert length(empty) == 0
+    assert length(e) == 0
     assert length(l1) == 2
     assert length(l2) == 2
 
     assert str(remove(l1, None)) == "{1}"
     assert str(remove(l1, 1)) == "{None}"
 
-    assert not member(None, empty)
+    assert not member(None, e)
     assert member(None, l1)
     assert member(1, l1)
     assert not member(2, l1)
 
     assert intersection(l1, l2) == l1
     assert intersection(l1, l2) == l2
-    assert intersection(l1, empty) == empty
-    assert intersection(l1, cons(None, empty)) == cons(None, empty)
+    assert intersection(l1, e) == e
+    assert intersection(l1, cons(None, e)) == cons(None, e)
 
     assert to_list(l1) == [None, 1] or to_list(l1) == [1, None]
     assert l1 == from_list([None, 1])
@@ -67,15 +73,15 @@ def test_api() -> None:
     assert concat(l1, l2) == from_list([None, 1, 1, None])
 
     buf = []
-    for e in l1:
-        buf.append(e)
+    for elem in l1:
+        buf.append(elem)
     assert buf in map(list, itertools.permutations([1, None]))
 
     lst = to_list(l1) + to_list(l2)
-    for e in l1:
-        lst.remove(e)
-    for e in l2:
-        lst.remove(e)
+    for elem in l1:
+        lst.remove(elem)
+    for elem in l2:
+        lst.remove(elem)
     assert lst == []
 
 
@@ -97,7 +103,9 @@ def test_immutable_remove() -> None:
 
 
 @given(btree())
-def test_immutable_all_operations(tree: BinaryTreeSet[Any]) -> None:
+def test_immutable_all_operations(
+    tree: BinaryTreeSet[Optional[int]],
+) -> None:
     """Property-based test that no operation modifies the original tree."""
     orig_list = to_list(tree)
     cons(999, tree)
@@ -248,19 +256,25 @@ def test_monoid_empty_right() -> None:
 
 # ---------- Property-Based Tests ----------
 @given(btree())
-def test_from_list_to_list_roundtrip(tree: BinaryTreeSet[Any]) -> None:
+def test_from_list_to_list_roundtrip(
+    tree: BinaryTreeSet[Optional[int]],
+) -> None:
     lst = to_list(tree)
     tree2 = from_list(lst)
     assert tree == tree2
 
 
 @given(btree())
-def test_size_equals_len_of_to_list(tree: BinaryTreeSet[Any]) -> None:
+def test_size_equals_len_of_to_list(
+    tree: BinaryTreeSet[Optional[int]],
+) -> None:
     assert length(tree) == len(to_list(tree))
 
 
 @given(btree(), st.one_of(st.none(), st.integers()))
-def test_remove_removes_element(tree: BinaryTreeSet[Any], elem: Any) -> None:
+def test_remove_removes_element(
+    tree: BinaryTreeSet[Optional[int]], elem: Optional[int]
+) -> None:
     before = length(tree)
     had = member(elem, tree)
     tree2 = remove(tree, elem)
@@ -274,7 +288,9 @@ def test_remove_removes_element(tree: BinaryTreeSet[Any], elem: Any) -> None:
 
 @given(btree(), btree(), btree())
 def test_monoid_associativity(
-    a: BinaryTreeSet[Any], b: BinaryTreeSet[Any], c: BinaryTreeSet[Any]
+    a: BinaryTreeSet[Optional[int]],
+    b: BinaryTreeSet[Optional[int]],
+    c: BinaryTreeSet[Optional[int]],
 ) -> None:
     left = concat(concat(a, b), c)
     right = concat(a, concat(b, c))
@@ -282,14 +298,18 @@ def test_monoid_associativity(
 
 
 @given(btree())
-def test_empty_identity_pbt(tree: BinaryTreeSet[Any]) -> None:
-    e: BinaryTreeSet[Any] = empty()
+def test_empty_identity_pbt(
+    tree: BinaryTreeSet[Optional[int]],
+) -> None:
+    e: BinaryTreeSet[Optional[int]] = empty()
     assert concat(tree, e) == tree
     assert concat(e, tree) == tree
 
 
 @given(btree(), st.one_of(st.none(), st.integers()))
-def test_member_after_cons(tree: BinaryTreeSet[Any], elem: Any) -> None:
+def test_member_after_cons(
+    tree: BinaryTreeSet[Optional[int]], elem: Optional[int]
+) -> None:
     new_tree = cons(elem, tree)
     assert member(elem, new_tree)
     if elem is not None:
@@ -299,7 +319,9 @@ def test_member_after_cons(tree: BinaryTreeSet[Any], elem: Any) -> None:
 
 
 @given(btree(), st.one_of(st.none(), st.integers()))
-def test_find_property(tree: BinaryTreeSet[Any], elem: Any) -> None:
+def test_find_property(
+    tree: BinaryTreeSet[Optional[int]], elem: Optional[int]
+) -> None:
     new_tree = cons(elem, tree)
     found = find(new_tree, lambda x: x == elem)
     assert found == elem
@@ -307,20 +329,24 @@ def test_find_property(tree: BinaryTreeSet[Any], elem: Any) -> None:
 
 
 @given(btree())
-def test_map_identity(tree: BinaryTreeSet[Any]) -> None:
+def test_map_identity(
+    tree: BinaryTreeSet[Optional[int]],
+) -> None:
     mapped = bts_map(tree, lambda x: x)
     assert mapped == tree
 
 
 @given(btree())
-def test_filter_property(tree: BinaryTreeSet[Any]) -> None:
+def test_filter_property(
+    tree: BinaryTreeSet[Optional[int]],
+) -> None:
     filtered_true = bts_filter(tree, lambda x: True)
     assert filtered_true == tree
     filtered_false = bts_filter(tree, lambda x: False)
     assert filtered_false == empty()
 
-    def pred(x: Any) -> bool:
-        return x is not None and isinstance(x, int) and x % 2 == 0
+    def pred(x: Optional[int]) -> bool:
+        return x is not None and x % 2 == 0
 
     filtered = bts_filter(tree, pred)
     for elem in to_list(tree):
@@ -331,5 +357,7 @@ def test_filter_property(tree: BinaryTreeSet[Any]) -> None:
 
 
 @given(btree())
-def test_iterator_matches_to_list(tree: BinaryTreeSet[Any]) -> None:
+def test_iterator_matches_to_list(
+    tree: BinaryTreeSet[Optional[int]],
+) -> None:
     assert list(iterator(tree)) == to_list(tree)
