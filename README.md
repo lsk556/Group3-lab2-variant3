@@ -71,3 +71,31 @@ This binary search tree maintains the BST property in an immutable style:
   element, and `"{elem1, elem2}"` for two or more elements.
 - **`concat` implementation** — Implemented by inserting all elements of
   the second set into the first. This is correct and sufficient for this lab.
+
+## Conclusion: Mutable vs Immutable BST
+
+Lab 1 provides a **mutable** `BinaryTree`: methods such as `add` and
+`remove` mutate the internal state of the object in place. The caller
+does not capture a return value; changes are implicit and the original
+structure is lost after every update.
+
+Lab 2 provides an **immutable** `BinaryTreeSet`: functions such as
+`cons` and `remove` always return a brand-new set, leaving the
+original untouched. State changes are explicit in the source code,
+because the programmer must reassign a variable to the returned value.
+
+This difference leads to three immediate consequences.
+- **structural sharing**: the immutable version reuses every sub-tree
+that was not affected by an update, whereas the mutable version
+destroys the previous shape entirely.
+- **persistence**: the immutable set keeps every older version valid,
+while the mutable set overwrites data in place.
+- **concurrency safety**: multiple threads can traverse an immutable 
+set without locks, because no node ever changes after creation; 
+the mutable tree requires explicit synchronization to 
+prevent race conditions.
+
+In short, the mutable design optimizes for minimal update cost and
+familiar object-oriented syntax, while the immutable design trades a
+small space overhead for determinism, safety, and the ability to reason
+about data without hidden side effects.
