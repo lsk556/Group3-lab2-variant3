@@ -85,15 +85,16 @@ original untouched. State changes are explicit in the source code,
 because the programmer must reassign a variable to the returned value.
 
 This difference leads to three immediate consequences.
-- **structural sharing**: the immutable version reuses every sub-tree
-that was not affected by an update, whereas the mutable version
-destroys the previous shape entirely.
-- **persistence**: the immutable set keeps every older version valid,
-while the mutable set overwrites data in place.
-- **concurrency safety**: multiple threads can traverse an immutable 
-set without locks, because no node ever changes after creation; 
-the mutable tree requires explicit synchronization to 
-prevent race conditions.
+
+- **Structural sharing** — the immutable version reuses every sub-tree
+  that was not affected by an update, whereas the mutable version
+  destroys the previous shape entirely.
+- **Persistence** — the immutable set keeps every older version valid,
+  while the mutable set overwrites data in place.
+- **Concurrency safety** — multiple threads can traverse an immutable
+  set without locks, because no node ever changes after creation; the
+  mutable tree requires explicit synchronization to prevent race
+  conditions.
 
 In short, the mutable design optimizes for minimal update cost and
 familiar object-oriented syntax, while the immutable design trades a
